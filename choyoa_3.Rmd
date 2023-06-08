@@ -2,7 +2,11 @@
 title: "Choyoa_03"
 author: "Adam Guerra"
 date: "2023-06-08"
-output: html_document
+output: 
+  html_document:
+    toc: TRUE
+    toc_float: TRUE
+    toc_depth: 4
 ---
 
 ## Document Set Up
