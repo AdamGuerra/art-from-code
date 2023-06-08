@@ -764,7 +764,7 @@ text <- geom_text(
 
 plot(
   base + 
-    as_group(poly1, poly2, poly3, poly4, id = "polygons", include = TRUE) +
+    as_group(poly1, poly2, poly4, id = "polygons", include = TRUE) +
     as_reference("polygons", id = "displacement_map") + 
     with_displacement(
       text,
@@ -929,6 +929,7 @@ shaded_ice_floe <- function(seed) {
 shaded_ice_floe(2) 
 
 ```
+
 ## Summary
 
 This assignment walking me through all new aspects of R that I had never used before. I didn't even know you were able to create such intricate graphs/art in R. It was a lot to digest when walking through the workshops and especially when trying to create my own. I ran into a problem when creating my own art piece, I couldn't get the two things I learned in task 2 and 3 to work together due to them not being from the same package. One worked with ggplot and the other was rayshader. I tried for a long time to get them to work together but ultimately was unable to do so. Other than that, I was successful in learning about the two different techniques and manipulating the code that was given. The only part of this assignment that was familiar was the parts that had to do with ggplot and dyplr. I might not do this type of coding again because I am not that interested in art; however, it is always cool to learn new things that code is capable of. Also I definitely learned from these artistic style graphs and am interested in how rayshader can be used in data analysis.
