@@ -1,0 +1,934 @@
+---
+title: "Choyoa_03"
+author: "Adam Guerra"
+date: "2023-06-08"
+output: html_document
+---
+
+## Document Set Up
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+#load packages
+library(ggplot2)
+library(tibble)
+library(scales)
+library(rayshader)
+library(tibble)
+library(ambient)
+library(dplyr)
+library(ggthemes)
+library(tictoc)
+library(here)
+library(ggforce)
+library(ggfx)
+library(flametree)
+```
+
+## Task 1: Wrap up
+
+#### Exercise 1
+```{r, message = FALSE}
+mpg
+mpg |>
+  ggplot(aes(x = cty, y = hwy, colour = drv, linewidth = 10)) + 
+  geom_line(show.legend = FALSE) + 
+  theme_void() + 
+  scale_color_brewer() +
+  coord_polar()
+```
+
+#### Exercise 2
+```{r}
+polar_art <- function(seed, n, palette) {
+  
+  # set the state of the random number generator
+  set.seed(seed)
+  
+  # data frame containing random values for 
+  # aesthetics we might want to use in the art
+  dat <- tibble(
+    x0 = runif(n),
+    y0 = runif(n),
+    x1 = x0 + runif(n, min = -.2, max = .2),
+    y1 = y0 + runif(n, min = -.2, max = .2),
+    shade = runif(n), 
+    size = runif(n)
+  )
+  
+  # plot segments in various colours, using 
+  # polar coordinates and a gradient palette
+  dat |> 
+    ggplot(aes(
+      x = x0,
+      y = y0,
+      xend = x1,
+      yend = y1,
+      colour = shade,
+      size = size
+    )) +
+    geom_segment(show.legend = FALSE) +
+    coord_polar() +
+    scale_y_continuous(expand = c(0, 0)) +
+    scale_x_continuous(expand = c(0, 0)) + 
+    scale_colour_gradientn(colours = palette) + 
+    scale_size(range = c(0, 10)) + 
+    theme_void()
+}
+```
+
+```{r}
+#change their code to alter their art
+polar_art(seed = 3, n = 2000, palette = c("antiquewhite", "orange", "bisque")) #changed seed and n values
+polar_art(seed = 1, n = 500, palette = c("red", "black", "white")) #changed seed and n values
+polar_art(seed = 10, n = 50, palette = c("red", "black", "white")) #changed seed and n value
+```
+
+```{r}
+#making my own art from polar function
+polar_art2 <- function(seed, n, palette) {
+  
+  # set the state of the random number generator
+  set.seed(seed)
+  
+  # data frame containing random values for 
+  # aesthetics we might want to use in the art
+  dat <- tibble(
+    x0 = runif(n),
+    y0 = runif(n),
+    x1 = x0 + runif(n, min = -.2, max = .2),
+    y1 = y0 + runif(n, min = -.2, max = .2),
+    shade = runif(n), 
+    size = runif(n)
+  )
+  
+  # plot segments in various colours, using 
+  # polar coordinates and a gradient palette
+  dat |> 
+    ggplot(aes(
+      x = x0,
+      y = y0,
+      xend = x1,
+      yend = y1,
+      colour = shade,
+      size = size
+    )) + #remove cood_polar()
+    geom_segment(show.legend = FALSE) +
+    scale_y_continuous(expand = c(0, 0)) +
+    scale_x_continuous(expand = c(0, 0)) + 
+    scale_colour_gradientn(colours = palette) + 
+    scale_size(range = c(0, 1)) + #changed size range
+    theme_void()
+}
+
+polar_art2(seed = 10, n = 500, palette = c("red", "black", "white"))
+```
+We are likely going back to an older method of file naming so that we can keep older original versions of our art. We want to be able to reproduce anything we have ever created, but with code we don't want old versions because they are worse than new versions. With code we only want the best version.
+
+#### Exercise 3
+```{r}
+sample_canva <- function(seed = NULL) {
+  if(!is.null(seed)) set.seed(seed)
+  sample(ggthemes::canva_palettes, 1)[[1]]
+}
+
+#run it a few times
+show_col(sample_canva(seed = 2))
+show_col(sample_canva(seed = 20))
+show_col(sample_canva(seed = 100))
+```
+
+```{r}
+#create my own generator
+sample_named_colours <- function(n) {
+  pos_colors <- colours(distinct = T)
+  sample(pos_colors, n)
+}
+
+polar_art2(seed = 10, n = 500, palette = sample_named_colours(n = 250))
+```
+
+```{r}
+#altered pallete function
+sample_canva02 <- function(seed = NULL) {
+  if(!is.null(seed)) set.seed(seed)
+  sample(unlist(ggthemes::canva_palettes, 1))[[1]]
+}
+
+show_col(sample_canva02())
+```
+
+#### Exercise 4
+```{r}
+#polar plot function
+polar_styled_plot <- function(data = NULL, palette) {
+  ggplot(
+    data = data,
+    mapping = aes(
+      x = x0,
+      y = y0,
+      xend = x1,
+      yend = y1,
+      colour = shade,
+      size = size
+    )) + 
+    coord_polar(clip = "off") +
+    scale_y_continuous(
+      expand = c(0, 0),
+      limits = c(0, 1), 
+      oob = scales::oob_keep
+    ) +
+    scale_x_continuous(
+      expand = c(0, 0), 
+      limits = c(0, 1), 
+      oob = scales::oob_keep
+    ) + 
+    scale_colour_gradientn(colours = palette) + 
+    scale_size(range = c(0, 10)) + 
+    theme_void() + 
+    guides(
+      colour = guide_none(),
+      size = guide_none(),
+      fill = guide_none(),
+      shape = guide_none()
+    )
+}
+
+#sample data function
+sample_data <- function(seed = NULL, n = 100){
+  if(!is.null(seed)) set.seed(seed)
+  dat <- tibble(
+    x0 = runif(n),
+    y0 = runif(n),
+    x1 = x0 + runif(n, min = -.2, max = .2),
+    y1 = y0 + runif(n, min = -.2, max = .2),
+    shade = runif(n), 
+    size = runif(n),
+    shape = factor(sample(0:22, size = n, replace = TRUE))
+  )
+}
+
+#use all three functions
+test_data <- sample_data(n = 1000, seed = 1)
+test_data2 <- sample_data(n = 5, seed = 2)
+
+polar_styled_plot(palette = sample_canva(seed = 2)) +
+  geom_line(data = test_data) +
+  geom_point(data = test_data2)
+```
+
+```{r}
+#make my own plot function
+my_styled_plot <- function(data = NULL, palette) {
+  ggplot(data = data, aes(x = x0, y = y0, xend = x1, yend = y1, 
+                          colour = shade, size = size)) +
+    coord_flip() +
+    theme_void() +
+    guides(colour = guide_none(), 
+           size = guide_none(), 
+           fill = guide_none(),
+           shape = guide_none())
+}
+
+my_styled_plot(data = test_data, palette = sample_named_colours(n = 10)) +
+  geom_segment()
+```
+
+## Task 2: Shading Tricks
+
+#### Exercise 1
+```{r}
+is_within_circle <- function(x_coord, y_coord, x_center, y_center, radius) {
+  (x_coord - x_center)^2 + (y_coord - y_center)^2 < radius^2
+}
+
+additive_circles <- function(n = 5, pixels = 1000, seed = NULL) {
+  
+  if(!is.null(seed)) set.seed(seed)
+  
+  # setup canvas
+  art <- long_grid(
+    x = seq(0, 1, length.out = pixels),
+    y = seq(0, 1, length.out = pixels)
+  )
+  art$paint <- 0
+  
+  for(i in 1:n) {
+    
+    # sample a random circle
+    x_center <- runif(1, min = .3, max = .7)
+    y_center <- runif(1, min = .3, max = .7)
+    radius <- runif(1, min = .05, max = .25)
+    
+    # add +1 to all points inside the circle
+    art <- art |>
+      mutate(
+        paint = paint + is_within_circle(
+          x, y, x_center, y_center, radius
+        )
+      )
+  }
+  
+  # normalise paint to [0, 1] range and return
+  art$paint <- normalise(art$paint)
+  return(art)
+}
+
+circle_art <- additive_circles(seed = 10) #changed to 10
+
+circle_array <- circle_art |>
+  as.array(value = paint) 
+
+circle_shadow <- ray_shade(
+  heightmap = circle_array,
+  sunaltitude = 10, #changed to 10
+  sunangle = 40, #changed to 30
+  zscale = .01,
+  multicore = TRUE
+)
+
+circle_scape <- circle_array |> 
+  height_shade() |>
+  add_shadow(
+    shadowmap = circle_shadow,
+    max_darken = .1
+  )
+
+#tic()
+plot_map(circle_scape, rotate = 180) #changed to 180
+#toc()
+
+```
+
+#### Exercise 2
+```{r}
+sample_canva2 <- function(seed = NULL, n = 4) {
+  if(!is.null(seed)) set.seed(seed)
+  sample(ggthemes::canva_palettes, 1)[[1]] |>
+    (\(x) colorRampPalette(x)(n))()  
+}
+
+ridge_art <- function(seed = NULL, pixels = 300) { #changed to 300
+  
+  if(!is.null(seed)) set.seed(seed)
+  long_grid(
+    x = seq(from = 0, to = 1, length.out = pixels),
+    y = seq(from = 0, to = 1, length.out = pixels)
+  ) |> 
+    mutate(
+      paint = fracture(
+        x = x, 
+        y = y,
+        noise = gen_simplex,
+        fractal = ridged,
+        octaves = 10, #cahgned to 10
+        frequency = 20,#chagned to 20
+        seed = seed
+      ),
+      paint = normalise(paint)
+    ) |>
+    as.array(value = paint)
+}
+
+shaded_ridge_art <- function(seed = NULL) {
+  
+  art <- ridge_art(seed) 
+  height_shade(
+    heightmap = art,
+    texture = sample_canva2(seed, 26) #changed to 26
+  ) |>
+    add_shadow(
+      shadowmap = ray_shade(
+        heightmap = art, 
+        sunaltitude = 10, #changed to 10
+        sunangle = 90,
+        multicore = TRUE, 
+        zscale = .05
+      ), 
+      max_darken = .1
+    ) |>
+    plot_map()
+}
+
+#tic()
+shaded_ridge_art(200) #changed to 200
+#toc()
+
+```
+
+#### Exercise 3
+
+```{r}
+sample_canva2 <- function(seed = NULL, n = 4) {
+  
+  if(!is.null(seed)) set.seed(seed)
+  sample(ggthemes::canva_palettes, 1)[[1]] |>
+    (\(x) colorRampPalette(x)(n))()  
+}
+
+transform_to_curl_space <- function(x, y, frequency = 1, octaves = 10) {
+  curl_noise(
+    generator = fracture,
+    noise = gen_simplex,
+    fractal = fbm,
+    octaves = octaves,
+    frequency = frequency,
+    x = x,
+    y = y
+  )
+}
+
+
+define_worley_cells <- function(x, y, frequency = 10, octaves = 6) { #changed frequency to 10
+  fracture(
+    noise = gen_worley,
+    fractal = billow,
+    octaves = octaves,
+    frequency = frequency,
+    value = "cell",
+    x = x,
+    y = y
+  ) |>
+    rank() |> 
+    normalise()
+}
+
+
+simplex_noise <- function(x, y, frequency = .2, octaves = 20) { #changed octaves to 20 and frequency to 0.2
+  fracture(
+    noise = gen_simplex,
+    fractal = ridged,
+    octaves = octaves,
+    frequency = frequency,
+    x = x,
+    y = y
+  ) |>
+    normalise()
+}
+
+
+ice_floe <- function(seed) {
+  
+  set.seed(seed)
+  
+  grid <- long_grid(
+    x = seq(0, 1, length.out = 2000),
+    y = seq(0, 1, length.out = 2000)
+  )
+  
+  coords <- transform_to_curl_space(grid$x, grid$y)
+  
+  grid |>
+    mutate(
+      cells = define_worley_cells(coords$x, coords$y),
+      paint = simplex_noise(x + cells, y + cells),
+      paint = normalise(paint)
+    ) |>
+    as.array(value = paint)
+}
+
+shaded_ice_floe <- function(seed) {
+  
+  art <- ice_floe(seed)
+  
+  height_shade(
+    heightmap = art,
+    texture = sample_canva2(seed, 69) #changed to 69
+  ) |>
+    add_shadow(
+      shadowmap = ray_shade(
+        heightmap = art, 
+        sunaltitude = 30, 
+        sunangle = 45, #changed to 45
+        multicore = TRUE, 
+        zscale = .005
+      ), 
+      max_darken = .05
+    ) |>
+    plot_map()
+}
+
+#tic()
+shaded_ice_floe(2) #changed to 2
+#toc()
+
+```
+
+#### Exercise 4
+
+```{r}
+#change their code for 3D art
+sample_canva2 <- function(seed = NULL, n = 4) {
+  
+  if(!is.null(seed)) set.seed(seed)
+  sample(ggthemes::canva_palettes, 1)[[1]] |>
+    (\(x) colorRampPalette(x)(n))()  
+}
+
+transform_to_curl_space <- function(x, y, frequency = 1, octaves = 10) {
+  curl_noise(
+    generator = fracture,
+    noise = gen_simplex,
+    fractal = fbm,
+    octaves = octaves,
+    frequency = frequency,
+    x = x,
+    y = y
+  )
+}
+
+
+define_worley_cells <- function(x, y, frequency = 3, octaves = 6) {
+  fracture(
+    noise = gen_worley,
+    fractal = billow,
+    octaves = octaves,
+    frequency = frequency,
+    value = "cell",
+    x = x,
+    y = y
+  ) |>
+    rank() |> 
+    normalise()
+}
+
+
+simplex_noise <- function(x, y, frequency = .1, octaves = 10) {
+  fracture(
+    noise = gen_simplex,
+    fractal = ridged,
+    octaves = octaves,
+    frequency = frequency,
+    x = x,
+    y = y
+  ) |>
+    normalise()
+}
+
+
+ice_floe <- function(seed) {
+  
+  set.seed(seed)
+  
+  grid <- long_grid(
+    x = seq(0, 1, length.out = 2000),
+    y = seq(0, 1, length.out = 2000)
+  )
+  
+  coords <- transform_to_curl_space(grid$x, grid$y)
+  
+  grid |>
+    mutate(
+      cells = define_worley_cells(coords$x, coords$y),
+      paint = simplex_noise(x + cells, y + cells),
+      paint = normalise(paint)
+    ) |>
+    as.array(value = paint)
+}
+
+icescape_3d <- function(seed) {
+  
+  ice_height <- matrix(0, 2500, 2500)
+  ice_height[251:2250, 251:2250] <- ice_floe(seed)
+  
+  ice_scape <- height_shade(
+    heightmap = ice_height,
+    texture = sample_canva2(seed, 256)
+  ) |>
+    add_shadow(
+      shadowmap = ray_shade(
+        heightmap = ice_height, 
+        sunaltitude = 30, 
+        sunangle = 90,
+        multicore = TRUE, 
+        zscale = .005
+      ), 
+      max_darken = .05
+    )
+  
+  plot_3d(
+    hillshade = ice_scape,
+    heightmap = ice_height,
+    theta = 45,
+    phi = 30,
+    zoom = .75,
+    zscale = .001,
+    background = "#222222",
+    shadow = FALSE,
+    soliddepth = .5,
+    solidcolor = "#222222",
+    windowsize = c(2500, 1500)
+  )
+  
+  render_snapshot(
+    filename = here("output", paste0("icescape_3d_", seed, ".png")), 
+    clear = TRUE
+  )
+}
+
+#tic()
+icescape_3d(seed = 120) #changed to 120
+#toc()
+
+knitr::include_graphics(here("output/icescape_3d_120.png"))
+
+```
+
+## Task 3:Pixel filters
+
+#### Exercise 1
+
+```{r}
+#flametree exercise
+tree <- flametree_grow(
+  seed = 1, 
+  time = 10, 
+  angle = c(-15, 15, 30)
+)
+
+leaf <- tree |> filter(id_leaf == TRUE)
+
+base <- ggplot() + 
+  scale_size_identity() + 
+  theme_void() + 
+  coord_equal()
+
+leaves <- geom_point(
+  mapping = aes(coord_x, coord_y),
+  data = leaf, 
+  size = 1, #changed to 1
+  stroke = 0.2, #changed to 0.2
+  colour = "pink"#changed to pink
+)
+
+trunk <- geom_bezier(
+  mapping = aes(coord_x, coord_y, group = id_pathtree, linewidth = seg_wid),
+  data = tree, 
+  lineend = "round", 
+  colour = "grey", #changed to grey
+  show.legend = FALSE
+)
+
+plot(base + trunk + leaves)
+```
+
+#### Exercise 1
+
+```{r}
+#glow exercise
+tree <- flametree_grow(
+  seed = 1, 
+  time = 9, 
+  angle = c(-15, 15, 30)
+)
+
+leaf <- tree |> filter(id_leaf == TRUE)
+
+base <- ggplot() + 
+  scale_size_identity() + 
+  theme_void() + 
+  coord_equal()
+
+leaves <- geom_point(
+  mapping = aes(coord_x, coord_y),
+  data = leaf, 
+  size = 2, #changed size to 2
+  stroke = 0, 
+  colour = "pink" #changed to pink
+)
+
+trunk <- geom_bezier(
+  mapping = aes(coord_x, coord_y, group = id_pathtree, size = seg_wid),
+  data = tree, 
+  lineend = "round", 
+  colour = "grey",#changed to grey
+  show.legend = FALSE
+)
+
+plot(
+  base +   
+    with_outer_glow(trunk, colour = "black", sigma = 1, expand = 2) + #added outer glow
+    with_inner_glow(leaves, colour = "red", sigma = 1, expand = 3) #chagned to inner glow
+)
+```
+
+#### Exercise 2
+
+```{r}
+#dither exercise
+set.seed(5) #changed to 5
+polar <- tibble(
+  arc_start = runif(200),
+  arc_end = arc_start + runif(200, min = -.2, max = .2),
+  radius = runif(200),
+  shade = runif(200), 
+  size = runif(200)
+)
+
+base <- ggplot(
+  data = polar, 
+  mapping = aes(
+    x = arc_start, 
+    y = radius,
+    xend = arc_end, 
+    yend = radius, 
+    colour = shade, 
+    size = size
+  )
+) + 
+  coord_polar(clip = "on") + #changed to on
+  scale_y_continuous(limits = c(0, 1), oob = scales::oob_keep) +
+  scale_x_continuous(limits = c(0, 1), oob = scales::oob_keep) + 
+  scale_colour_viridis_c(option = "viridis") + #changed to viridis
+  guides(colour = guide_none(), size = guide_none()) + 
+  scale_size(range = c(0, 10)) + 
+  theme_void() +
+  theme(panel.background = element_rect(fill = "#aaaaaa"))
+
+plot(base + with_ordered_dither(geom_segment()) + #changed to order dither
+       with_dither(geom_line())) #added geom line with dither
+```
+
+#### Exercise 3
+
+```{r}
+#mask exercise
+texture <- geom_raster(
+  mapping = aes(x, y, fill = paint),
+  data = long_grid(
+    x = seq(from = -1, to = 1, length.out = 1000),
+    y = seq(from = -1, to = 1, length.out = 1000)
+  ) |> 
+    mutate(
+      lf_noise = gen_simplex(x, y, frequency = 20, seed = 1234), #changed frequency to 20
+      mf_noise = gen_simplex(x, y, frequency = 200, seed = 1234), #changed frequency to 200
+      hf_noise = gen_simplex(x, y, frequency = 99, seed = 1234),
+      paint = lf_noise + mf_noise + hf_noise
+    )
+)
+
+hex <- tibble(x = sin((0:6)/6 * 2 * pi), y = cos((0:6)/6 * 2 * pi))
+mask <- geom_polygon(aes(x, y), hex, fill = "white")
+
+base <- ggplot() + 
+  theme_void() +
+  coord_equal() +
+  scale_x_continuous(expand = c(0, 0)) +
+  scale_y_continuous(expand = c(0, 0)) +
+  scale_fill_gradientn(
+    colours = c("orange","red"), #changed colors to orange and red
+    guide = guide_none()
+  )
+
+border <- geom_path(aes(x, y), hex, colour = "white", size = 15)
+
+text <- geom_text(
+  mapping = aes(x, y, label = text), 
+  dat = tibble(x = 0, y = 0, text = "DATA"), #cahnged to data
+  size = 36,
+  colour = "white", 
+  fontface = "italic" #changed to italic
+) 
+
+plot(
+  base + 
+    as_group(texture, text, border, id = "content") +
+    as_reference(mask, id = "mask") + 
+    with_mask("content", "mask")
+)
+```
+
+#### Exercise 4
+
+```{r}
+#displace exercise
+polygon_layer <- function(x, y, fill = "white", alpha = .8) { #changed alpha to 0.8
+  geom_polygon(aes(x, y), fill = fill, alpha = alpha)
+}
+poly1 <- polygon_layer(x = c(1, 0, 0), y = c(0, 0, 1))
+poly2 <- polygon_layer(x = c(0, 1, 1), y = c(0, 0, 1))
+#poly3 <- polygon_layer(x = c(.3, 1, 1), y = c(0, 0, .7)) #removed line
+poly4 <- polygon_layer(x = c(0, 0, .7), y = c(.3, 1, 1))
+
+base <- ggplot() + 
+  coord_equal(xlim = c(0, 1), ylim = c(0, 1)) + 
+  theme_void() + 
+  theme(panel.background = element_rect(fill = "#333333"))
+
+text <- geom_text(
+  mapping = aes(0.5, 0.5, label = "DATA"), #changed to data
+  size = 40, #changed to 40
+  colour = "black", 
+  fontface = "bold"
+)
+
+plot(
+  base + 
+    as_group(poly1, poly2, poly3, poly4, id = "polygons", include = TRUE) +
+    as_reference("polygons", id = "displacement_map") + 
+    with_displacement(
+      text,
+      x_map = ch_alpha("displacement_map"),
+      y_map = ch_alpha("displacement_map"), 
+      x_scale = 150,
+      y_scale = -150
+    )
+)
+```
+
+#### Exercise 5
+
+```{r}
+tree <- flametree_grow(
+  seed = 3, #changed to seed 3
+  time = 12, #changed to 12
+  angle = c(-15, 15, 30)
+)
+
+leaf <- tree |> filter(id_leaf == TRUE)
+
+leaves <- geom_point(
+  data = leaf, 
+  mapping = aes(coord_x, coord_y, colour = seg_col),
+  colour = "white",
+  size = 2, 
+  stroke = 0
+)
+
+trunk <- geom_bezier(
+  data = tree,
+  mapping = aes(
+    x = coord_x, 
+    y = coord_y, 
+    size = seg_wid,
+    group = id_pathtree
+  ),
+  colour = "white",
+  lineend = "round"
+)
+
+polygon_layer <- function(x, y, fill = "white", alpha = .5) {
+  geom_polygon(aes(x, y), fill = fill, alpha = alpha)
+}
+
+triangle <- polygon_layer(
+  x = c(-4, 2, 2), 
+  y = c(0, 0, 6), 
+  fill = "red",#changed to red
+  alpha = 1
+)
+
+base <- ggplot() + 
+  theme_void() +
+  theme(panel.background = element_rect(
+    fill = "black", colour = "black"
+  )) + 
+  coord_equal(xlim = c(-3, 1), ylim = c(1, 5)) +
+  scale_x_continuous(expand = c(0, 0)) +
+  scale_y_continuous(expand = c(0, 0)) +
+  scale_size_identity(guide = guide_none())
+
+plot(
+  base +
+    as_group(trunk, leaves, id = "tree") + 
+    with_blend(triangle, "tree", blend_type = "linear_dodge") #changed to linear dodge
+)
+```
+
+## Task 4: Make my own
+
+```{r}
+sample_canva2 <- function(seed = NULL, n = 4) {
+  if(!is.null(seed)) set.seed(seed)
+  sample(ggthemes::canva_palettes, 1)[[1]] |>
+    (\(x) colorRampPalette(x)(n))()  
+}
+
+transform_to_curl_space <- function(x, y, frequency = 1, octaves = 10) {
+  curl_noise(
+    generator = fracture,
+    noise = gen_simplex,
+    fractal = fbm,
+    octaves = octaves,
+    frequency = frequency,
+    x = x,
+    y = y
+  )
+}
+
+
+define_worley_cells <- function(x, y, frequency = 10, octaves = 6) { 
+  fracture(
+    noise = gen_worley,
+    fractal = billow,
+    octaves = octaves,
+    frequency = frequency,
+    value = "cell",
+    x = x,
+    y = y
+  ) |>
+    rank() |> 
+    normalise()
+}
+
+
+simplex_noise <- function(x, y, frequency = .2, octaves = 20) { 
+  fracture(
+    noise = gen_simplex,
+    fractal = ridged,
+    octaves = octaves,
+    frequency = frequency,
+    x = x,
+    y = y
+  ) |>
+    normalise()
+}
+
+
+ice_floe <- function(seed) {
+  
+  set.seed(seed)
+  
+  grid <- long_grid(
+    x = seq(0, 1, length.out = 2000),
+    y = seq(0, 1, length.out = 2000)
+  )
+  
+  coords <- transform_to_curl_space(grid$x, grid$y)
+  
+  grid |>
+    mutate(
+      cells = define_worley_cells(coords$x, coords$y),
+      paint = simplex_noise(x + cells, y + cells),
+      paint = normalise(paint)
+    ) |>
+    as.array(value = paint)
+}
+
+shaded_ice_floe <- function(seed) {
+  
+  art <- ice_floe(seed)
+  
+  height_shade(
+    heightmap = art,
+    texture = sample_canva2(seed, 69) 
+  ) |>
+    add_shadow(
+      shadowmap = ray_shade(
+        heightmap = art, 
+        sunaltitude = 30, 
+        sunangle = 45,
+        multicore = TRUE, 
+        zscale = .005
+      ), 
+      max_darken = .05
+    ) |>
+    plot_map()
+}
+
+shaded_ice_floe(2) 
+
+```
+## Summary
+
+This assignment walking me through all new aspects of R that I had never used before. I didn't even know you were able to create such intricate graphs/art in R. It was a lot to digest when walking through the workshops and especially when trying to create my own. I ran into a problem when creating my own art piece, I couldn't get the two things I learned in task 2 and 3 to work together due to them not being from the same package. One worked with ggplot and the other was rayshader. I tried for a long time to get them to work together but ultimately was unable to do so. Other than that, I was successful in learning about the two different techniques and manipulating the code that was given. The only part of this assignment that was familiar was the parts that had to do with ggplot and dyplr. I might not do this type of coding again because I am not that interested in art; however, it is always cool to learn new things that code is capable of. Also I definitely learned from these artistic style graphs and am interested in how rayshader can be used in data analysis.
